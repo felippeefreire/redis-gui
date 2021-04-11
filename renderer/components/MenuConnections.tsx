@@ -1,7 +1,8 @@
-import React from 'react';
+import React, {Fragment} from 'react';
 import {makeStyles} from '@material-ui/core/styles';
-import Typography from '@material-ui/core/Typography';
-import {List, ListItem, ListItemText} from "@material-ui/core";
+import {List, ListItem, ListItemText, ListSubheader, Menu, MenuItem} from "@material-ui/core";
+import {ConnectionService} from "../core/services/ConnectionService";
+import {IConnection} from "../core/interfaces/IConnection";
 
 const useStyles = makeStyles((theme) => ({
     root: {},
@@ -11,27 +12,61 @@ const useStyles = makeStyles((theme) => ({
     },
 }));
 
-const connections = [
-    {
-        name: 'Example 1'
-    }
-];
-
 export default function MenuConnections() {
     const classes = useStyles();
+    const connections = ConnectionService.list();
     return (
         <div className={classes.root}>
-            <Typography variant="h6" className={classes.title}>
-                Connections
-            </Typography>
-
-            <List component="nav">
-                {connections.map((connection) => (
-                    <ListItem button>
-                        <ListItemText primary={connection.name}/>
-                    </ListItem>
-                ))}
+            <List subheader={<ListSubheader>Connections</ListSubheader>} className={classes.root}>
+                {connections.map((connection) => (<ItemConnection connection={connection}/>))}
             </List>
         </div>
+    );
+}
+
+const initialState = {
+    mouseX: null,
+    mouseY: null,
+};
+
+function ItemConnection({connection}: { connection: IConnection }) {
+    const [state, setState] = React.useState(initialState);
+
+    const handleClick = (event) => {
+        event.preventDefault();
+        setState({
+            mouseX: event.clientX - 2,
+            mouseY: event.clientY - 4,
+        });
+    };
+
+    const handleClose = () => {
+        setState(initialState);
+    };
+
+    const handleDelete = async () => {
+        setState(initialState);
+        await ConnectionService.delete(connection);
+    };
+
+    return (
+        <Fragment>
+            <ListItem onContextMenu={handleClick} style={{cursor: 'context-menu'}}>
+                <ListItemText primary={connection.name}/>
+            </ListItem>
+            <Menu
+                keepMounted
+                open={state.mouseY !== null}
+                onClose={handleClose}
+                anchorReference="anchorPosition"
+                anchorPosition={
+                    state.mouseY !== null && state.mouseX !== null
+                        ? {top: state.mouseY, left: state.mouseX}
+                        : undefined
+                }
+            >
+                <MenuItem onClick={handleDelete}>Delete</MenuItem>
+            </Menu>
+        </Fragment>
     );
 }
